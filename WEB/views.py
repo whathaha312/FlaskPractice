@@ -1,14 +1,17 @@
 #-*- encoding=UTF-8 -*-
-
 from WEB import app,db
 from models import Image,User
 from flask import render_template,redirect,request,flash,get_flashed_messages
 from flask_login import login_user,logout_user,login_required,current_user
-import random,hashlib
+import random,hashlib,json
+
+
 @app.route('/')
 def index():
     image=Image.query.order_by('id desc').limit(10).all()
     return render_template('index.html',images=image)
+
+
 
 @app.route('/image/<int:image_id>')
 def image(image_id):
@@ -17,13 +20,30 @@ def image(image_id):
     if image==None:
         return redirect('/')
     return render_template('pageDetail.html',image=image)
-@app.route('/profile/<int:profile_id>')
+
+
+
+@app.route('/profile/<int:user_id>')
 @login_required
-def profile(profile_id):
-    user=User.query.get(profile_id)
+def profile(user_id):
+    user=User.query.get(user_id)
     if image==None:
         return redirect('/')
-    return render_template('profile.html',user=user)
+    pageinate=Image.query.filter_by(user_id=user.id).paginate(page=1,per_page=3,error_out=False)
+    return render_template('profile.html',user=user,image=pageinate.items)
+
+
+@app.route('/profile/images/<int:user_id>/<int:page>/<int:per_page>/')
+def user_images(user_id,page,per_page):
+    pageinate=Image.query.filter_by(user_id=user_id).paginate(page=page,per_page=per_page,error_out=False)
+    map={'has_next':pageinate.has_next}
+    images=[]
+    for image in pageinate.items:
+        imgvo={'id':image.id,'url':image.url,'comment_count':len(image.comments)}
+        images.append(imgvo)
+    map['images']=images
+    return json.dumps(map)
+
 
 @app.route('/reloginpage/')
 def reloginpage():
@@ -33,10 +53,14 @@ def reloginpage():
     print msg
     return render_template('login.html',msg=msg)
 
+
+
 def redirct_with_msg(target,msg,category):
     if msg != None:
         flash(msg,category=category)
     return redirect(target)
+
+
 
 @app.route('/reg/', methods={'get','post'})
 def reg():
@@ -75,6 +99,8 @@ def login():
          return redirct_with_msg('/reloginpage',u'密码错误','relogin')
     login_user(user)
     return redirect('/')
+
+
 
 @app.route('/loginout/')
 def logout():
