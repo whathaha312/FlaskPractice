@@ -1,4 +1,4 @@
-from WEB import db
+from WEB import db,login_manager
 from datetime import datetime
 import random
 
@@ -34,10 +34,31 @@ class User(db.Model):
     username = db.Column(db.String(80), unique=True)
     password = db.Column(db.String(32))
     head_url = db.Column(db.String(256))
+    salt=db.Column(db.String(32))
     images=db.relationship('Image',backref='user')
-    def __init__(self, username, password):
+    def __init__(self, username, password,salt=''):
         self.username = username
         self.password = password
+        self.salt=salt
         self.head_url = 'https://www.baidu.com/img/bd_logo1.png'
     def __repr__(self):
         return '<User %d%s>' % (self.id ,self.username)
+    @property
+    def is_authenticated(self):
+        return True
+
+    @property
+    def is_active(self):
+        return True
+
+    @property
+    def is_anonymous(self):
+        return False
+
+    @property
+    def get_id(self):
+        return self.id
+
+@login_manager.user_loader
+def load_user(userid):
+    return User.query.get(userid)
