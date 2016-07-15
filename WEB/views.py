@@ -8,7 +8,7 @@ import random,hashlib,json
 
 @app.route('/')
 def index():
-    image=Image.query.order_by('id desc').limit(10).all()
+    image=Image.query.order_by('id desc').limit(20).all()
     return render_template('index.html',images=image)
 
 
@@ -29,8 +29,10 @@ def profile(user_id):
     user=User.query.get(user_id)
     if image==None:
         return redirect('/')
-    pageinate=Image.query.filter_by(user_id=user.id).paginate(page=1,per_page=3,error_out=False)
-    return render_template('profile.html',user=user,image=pageinate.items)
+    paginate = Image.query.filter_by(user_id=user_id).paginate(page=1, per_page=3, error_out=False)
+    print paginate
+    return render_template('profile.html', user=user, images=paginate.items, has_next=paginate.has_next)
+
 
 
 @app.route('/profile/images/<int:user_id>/<int:page>/<int:per_page>/')
@@ -95,6 +97,9 @@ def login():
     m.update(password+user.salt)
     print user.salt
     print m.hexdigest()
+    m.update(password)
+    print m.hexdigest()
+    print user.password
     if(m.hexdigest()!=user.password):
          return redirct_with_msg('/reloginpage',u'密码错误','relogin')
     login_user(user)
